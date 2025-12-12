@@ -3,10 +3,12 @@ package com.example.mapstruct_demo.mapper;
 import com.example.mapstruct_demo.common.model.entity.CommonAggregate;
 import com.example.mapstruct_demo.dto.*;
 import com.example.mapstruct_demo.fico.model.FicoAggregate;
-import org.mapstruct.AfterMapping;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
+import com.example.mapstruct_demo.fico.model.FicoApplicationSource;
+import com.example.mapstruct_demo.fico.model.FicoLoanInfoSource;
+import com.example.mapstruct_demo.fico.model.FicoApplicantSource;
+import com.example.mapstruct_demo.fico.model.FicoCreditDecisioningSource;
+import com.example.mapstruct_demo.fico.model.FicoConfigurationsSource;
+import org.mapstruct.*;
 
 import java.util.List;
 import java.util.Map;
@@ -23,6 +25,13 @@ public interface TransactionMapper {
     @Mapping(source = "fico.ficoConfigurations", target = "ficoConfigurations")
     TransactionInput buildTransactionInput(FicoAggregate fico, CommonAggregate common, Map<String, Object> defaults);
 
+    // --- Mapping helpers for nested types ---
+    Application map(FicoApplicationSource source);
+    LoanInfo map(FicoLoanInfoSource source);
+    Applicant map(FicoApplicantSource source);
+    CreditDecisioning map(FicoCreditDecisioningSource source);
+    FicoConfigurations map(FicoConfigurationsSource source);
+
     /**
      * Overlay common values after FICO mapping.
      */
@@ -30,7 +39,6 @@ public interface TransactionMapper {
     default void overlayCommon(CommonAggregate common, @MappingTarget TransactionInput ti) {
         if (common == null) return;
 
-        // Overlay Application
         if (common.getApplication() != null) {
             Application app = ti.getApplication();
             if (app == null) {
@@ -45,7 +53,6 @@ public interface TransactionMapper {
             }
         }
 
-        // Overlay LoanInfo
         if (common.getLoanInfo() != null) {
             LoanInfo loan = ti.getApplication().getLoanInfo();
             if (loan == null) {
@@ -60,28 +67,22 @@ public interface TransactionMapper {
             }
         }
 
-        // Overlay Applicants
         if (common.getApplicants() != null && !common.getApplicants().isEmpty()) {
             List<Applicant> applicants = ti.getApplicants();
             if (applicants == null || applicants.isEmpty()) {
                 // Replace if FICO gave none
-                // (You can also merge field-by-field if needed)
-                // Here we just map common applicants directly
-                // Assuming you have a CommonToRequestMapper for ApplicantEntity → Applicant
+                // Here you can map common applicants directly
             }
         }
 
-        // Overlay CreditDecisioning
         if (common.getCreditDecisioning() != null) {
             CreditDecisioning cd = ti.getCreditDecisioning();
             if (cd == null) {
                 cd = new CreditDecisioning();
                 ti.setCreditDecisioning(cd);
             }
-            // overlay fields as needed
         }
 
-        // Overlay FicoConfigurations
         if (common.getFicoConfigurations() != null) {
             FicoConfigurations fc = ti.getFicoConfigurations();
             if (fc == null) {
